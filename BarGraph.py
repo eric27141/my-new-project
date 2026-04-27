@@ -8,21 +8,21 @@ import matplotlib.pyplot as plt
 # 1. FILE & ANGLE CONFIGURATION
 # ==========================================
 FILE_CONFIGS = [
-    {'filename': 'Roll0.xlsx',   'expected_roll': 0.0},
-    {'filename': 'Roll30.xlsx',  'expected_roll': 30.0},
-    {'filename': 'Roll45.xlsx',  'expected_roll': 45.0},
-    {'filename': 'Roll60.xlsx',  'expected_roll': 60.0},
-    {'filename': 'Roll90.xlsx',  'expected_roll': 90.0},
-    {'filename': 'Roll-30.xlsx', 'expected_roll': -30.0},
-    {'filename': 'Roll-45.xlsx', 'expected_roll': -45.0},
-    {'filename': 'Roll-60.xlsx', 'expected_roll': -60.0},
-    {'filename': 'Roll-90.xlsx', 'expected_roll': -90.0},
+    {'filename': 'Yaw0.xlsx',   'expected_yaw': 0.0},
+    {'filename': 'Yaw30.xlsx',  'expected_yaw': 30.0},
+    {'filename': 'Yaw45.xlsx',  'expected_yaw': 45.0},
+    {'filename': 'Yaw60.xlsx',  'expected_yaw': 60.0},
+    {'filename': 'Yaw90.xlsx',  'expected_yaw': 90.0},
+    {'filename': 'Yaw-30.xlsx', 'expected_yaw': -30.0},
+    {'filename': 'Yaw-45.xlsx', 'expected_yaw': -45.0},
+    {'filename': 'Yaw-60.xlsx', 'expected_yaw': -60.0},
+    {'filename': 'Yaw-90.xlsx', 'expected_yaw': -90.0},
 ]
 
 OUTPUT_FILE = 'Batch_Validation_Output.xlsx'
 
 # Highlight Configuration
-HIGHLIGHT_TARGET = 'Roll'  
+HIGHLIGHT_TARGET = 'Yaw'  
 HIGHLIGHT_COLOR = 'FFFFE0' # Light Yellow
 
 ORDERED_SENSORS = ["21", "22", "23"]
@@ -30,16 +30,16 @@ ORDERED_SENSORS = ["21", "22", "23"]
 # ==========================================
 # 2. STATISTICAL ENGINE
 # ==========================================
-def calculate_roll_stats(target_df, expected_val):
-    """Calculates all scientific metrics for Roll axis"""
+def calculate_yaw_stats(target_df, expected_val):
+    """Calculates all scientific metrics for Yaw axis"""
     if target_df.empty:
         return {"Expected": expected_val, "Mean": "", "MAE": "", "RMSE": "", "Bias": "", "STD": "", "Lower_LOA": "", "Upper_LOA": ""}
     
     # 1. Raw Measured Average
-    measured_mean = np.mean(target_df['roll'])
+    measured_mean = np.mean(target_df['yaw'])
     
     # 2. Error Calculations
-    raw_err = target_df['roll'] - expected_val
+    raw_err = target_df['yaw'] - expected_val
     abs_err = np.abs(raw_err)
     
     mae = np.mean(abs_err)
@@ -72,8 +72,7 @@ def process_batch():
     results = {
         '21': [],
         '22': [],
-        '23': [],
-        'Combined_Average': [] 
+        '23': []
     }
     
     for config in FILE_CONFIGS:
@@ -85,10 +84,10 @@ def process_batch():
             print(f"   ⚠️ File not found. Creating blank row.")
             empty_row = {'File_Name': fname, 'Sample_Count': 0}
             empty_row.update({
-                'Expected_Roll': config['expected_roll'],
-                'Roll_Mean': "",
-                'Roll_MAE': "", 'Roll_RMSE': "", 'Roll_Bias': "", 
-                'Roll_STD': "", 'Roll_Lower_LOA': "", 'Roll_Upper_LOA': ""
+                'Expected_Yaw': config['expected_yaw'],
+                'Yaw_Mean': "",
+                'Yaw_MAE': "", 'Yaw_RMSE': "", 'Yaw_Bias': "", 
+                'Yaw_STD': "", 'Yaw_Lower_LOA': "", 'Yaw_Upper_LOA': ""
             })
             for key in results.keys():
                 results[key].append(empty_row)
@@ -104,8 +103,13 @@ def process_batch():
         # Find column indices
         col_indices = {header: idx for idx, header in enumerate(headers)}
         
-        if 'roll' not in col_indices:
-            print(f"   ❌ No 'roll' column found in {fname}.")
+        if 'yaw' not in col_indices:
+            print(f"   ❌ No 'yaw' column found in {fname}.")
+            # Create empty data for missing files
+            empty_df = SimpleDataFrame({'yaw': np.array([])})
+            for sensor in ORDERED_SENSORS:
+                sensor_df = SimpleDataFrame({'yaw': np.array([])})
+                results[sensor].append(build_row(sensor_df))
             continue
             
         # Read and filter data
@@ -138,41 +142,42 @@ def process_batch():
         
         paused_df = SimpleDataFrame(paused_data)
         
-        if paused_df.empty:
-            print(f"   ❌ No paused data found in {fname}.")
-            continue
-            
         # --- Helper Function to Build Row Data ---
         def build_row(sensor_data):
             row_data = {'File_Name': fname, 'Sample_Count': len(sensor_data)}
             
-            # Process Roll only
-            expected = config['expected_roll']
-            stats = calculate_roll_stats(sensor_data, expected)
+            # Process Yaw only
+            expected = config['expected_yaw']
+            stats = calculate_yaw_stats(sensor_data, expected)
             
             row_data.update({
-                'Expected_Roll': stats['Expected'],
-                'Roll_Mean': stats['Mean'],
-                'Roll_MAE': stats['MAE'],
-                'Roll_RMSE': stats['RMSE'],
-                'Roll_Bias': stats['Bias'],
-                'Roll_STD': stats['STD'],
-                'Roll_Lower_LOA': stats['Lower_LOA'],
-                'Roll_Upper_LOA': stats['Upper_LOA']
+                'Expected_Yaw': stats['Expected'],
+                'Yaw_Mean': stats['Mean'],
+                'Yaw_MAE': stats['MAE'],
+                'Yaw_RMSE': stats['RMSE'],
+                'Yaw_Bias': stats['Bias'],
+                'Yaw_STD': stats['STD'],
+                'Yaw_Lower_LOA': stats['Lower_LOA'],
+                'Yaw_Upper_LOA': stats['Upper_LOA']
             })
             return row_data
+        
+        if paused_df.empty:
+            print(f"   ❌ No paused data found in {fname}.")
+            # Still add empty rows for this file
+            for sensor in ORDERED_SENSORS:
+                sensor_df = SimpleDataFrame({'yaw': np.array([])})
+                results[sensor].append(build_row(sensor_df))
+            continue
 
         # --- Process Individual Sensors ---
         for sensor in ORDERED_SENSORS:
             sensor_mask = np.array(paused_df.data['sensor_id']) == int(sensor)
-            sensor_roll_data = np.array(paused_df.data['roll'])[sensor_mask]
+            sensor_yaw_data = np.array(paused_df.data['yaw'])[sensor_mask]
             
             # Create sensor-specific DataFrame
-            sensor_df = SimpleDataFrame({'roll': sensor_roll_data})
+            sensor_df = SimpleDataFrame({'yaw': sensor_yaw_data})
             results[sensor].append(build_row(sensor_df))
-            
-        # --- Process Combined Average (All Sensors Pooled) ---
-        results['Combined_Average'].append(build_row(paused_df))
 
     # ==========================================
     # 4. EXCEL EXPORT & HIGHLIGHTING
@@ -224,55 +229,55 @@ def process_batch():
 # 5. PLOT GENERATION
 # ==========================================
 def generate_validation_plot(results):
-    """Generate IMU Roll Accuracy Validation chart"""
-    print("\n📊 Generating Roll validation plot...")
+    """Generate IMU Yaw Accuracy Validation chart"""
+    print("\n📊 Generating Yaw validation plot...")
     
-    # Extract roll angles from file names
-    Roll_angles = [0, 30, 45, 60, 90, -30, -45, -60, -90]
+    # Extract yaw angles from file names
+    Yaw_angles = [0, 30, 45, 60, 90, -30, -45, -60, -90]
     
-    # Prepare data for plotting
-    sensor_labels = ['21', '22', '23', 'Combined_Average']
-    sensor_colors = ['#1f77b4', '#2ca02c', '#ff7f0e', '#9467bd']  # Blue, Green, Orange, Purple
+    # Prepare data for plotting - only individual sensors
+    sensor_labels = ['21', '22', '23']
+    sensor_colors = ['#1f77b4', '#2ca02c', '#ff7f0e']  # Blue, Green, Orange
     
     fig, ax = plt.subplots(figsize=(14, 8))
     
-    x = np.arange(len(Roll_angles))
-    width = 0.2
+    x = np.arange(len(Yaw_angles))
+    width = 0.25  # Wider bars since we have fewer sensors
     
     for idx, sensor in enumerate(sensor_labels):
         mae_values = []
         std_values = []
         
         for row_data in results[sensor]:
-            # Extract Roll_MAE and Roll_STD from the row
-            mae = row_data.get('Roll_MAE', 0)
-            std = row_data.get('Roll_STD', 0)
+            # Extract Yaw_MAE and Yaw_STD from the row
+            mae = row_data.get('Yaw_MAE', 0)
+            std = row_data.get('Yaw_STD', 0)
             mae_values.append(mae if isinstance(mae, (int, float)) and not np.isnan(mae) else 0)
             std_values.append(std if isinstance(std, (int, float)) and not np.isnan(std) else 0)
         
         # Ensure we have the right number of values
-        while len(mae_values) < len(Roll_angles):
+        while len(mae_values) < len(Yaw_angles):
             mae_values.append(0)
             std_values.append(0)
-        mae_values = mae_values[:len(Roll_angles)]
-        std_values = std_values[:len(Roll_angles)]
+        mae_values = mae_values[:len(Yaw_angles)]
+        std_values = std_values[:len(Yaw_angles)]
         
-        offset = (idx - 1.5) * width
-        ax.bar(x + offset, mae_values, width, label=f'Sensor {sensor}' if sensor != 'Combined_Average' else 'Overall System',
+        offset = (idx - 1) * width  # Center the three bars
+        ax.bar(x + offset, mae_values, width, label=f'Sensor {sensor}',
                color=sensor_colors[idx], yerr=std_values, capsize=5, alpha=0.8)
     
     # Formatting
-    ax.set_xlabel('Expected Roll Angle (degrees)', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Expected Yaw Angle (degrees)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Mean Absolute Error (degrees)', fontsize=12, fontweight='bold')
-    ax.set_title('IMU Roll Angle Accuracy Validation\nError bars show ±1 standard deviation', fontsize=14, fontweight='bold')
+    ax.set_title('IMU Yaw Angle Accuracy Validation\nError bars show ±1 standard deviation', fontsize=14, fontweight='bold')
     ax.set_xticks(x)
-    ax.set_xticklabels([f'{angle}°' for angle in Roll_angles])
+    ax.set_xticklabels([f'{angle}°' for angle in Yaw_angles])
     ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('Roll_Validation_Chart.png', dpi=300, bbox_inches='tight')
-    print("✅ Roll validation chart saved as 'Roll_Validation_Chart.png'")
+    plt.savefig('Yaw_Validation_Chart.png', dpi=300, bbox_inches='tight')
+    print("✅ Yaw validation chart saved as 'Yaw_Validation_Chart.png'")
 
 if __name__ == "__main__":
     process_batch()
