@@ -8,21 +8,21 @@ import matplotlib.pyplot as plt
 # 1. FILE & ANGLE CONFIGURATION
 # ==========================================
 FILE_CONFIGS = [
-    {'filename': 'Yaw0.xlsx',   'expected_yaw': 0.0},
-    {'filename': 'Yaw30.xlsx',  'expected_yaw': 30.0},
-    {'filename': 'Yaw45.xlsx',  'expected_yaw': 45.0},
-    {'filename': 'Yaw60.xlsx',  'expected_yaw': 60.0},
-    {'filename': 'Yaw90.xlsx',  'expected_yaw': 90.0},
-    {'filename': 'Yaw-30.xlsx', 'expected_yaw': -30.0},
-    {'filename': 'Yaw-45.xlsx', 'expected_yaw': -45.0},
-    {'filename': 'Yaw-60.xlsx', 'expected_yaw': -60.0},
-    {'filename': 'Yaw-90.xlsx', 'expected_yaw': -90.0},
+    {'filename': 'Yaw0.xlsx',   'expected_pitch': 0.0},
+    {'filename': 'Pitch30.xlsx',  'expected_pitch': 30.0},
+    {'filename': 'Pitch45.xlsx',  'expected_pitch': 45.0},
+    {'filename': 'Pitch60.xlsx',  'expected_pitch': 60.0},
+    {'filename': 'Pitch90.xlsx',  'expected_pitch': 90.0},
+    {'filename': 'Pitch-30.xlsx', 'expected_pitch': -30.0},
+    {'filename': 'Pitch-45.xlsx', 'expected_pitch': -45.0},
+    {'filename': 'Pitch-60.xlsx', 'expected_pitch': -60.0},
+    {'filename': 'Pitch-90.xlsx', 'expected_pitch': -90.0},
 ]
 
 OUTPUT_FILE = 'Batch_Validation_Output.xlsx'
 
 # Highlight Configuration
-HIGHLIGHT_TARGET = 'Yaw'  
+HIGHLIGHT_TARGET = 'Pitch'  
 HIGHLIGHT_COLOR = 'FFFFE0' # Light Yellow
 
 ORDERED_SENSORS = ["21", "22", "23"]
@@ -30,16 +30,16 @@ ORDERED_SENSORS = ["21", "22", "23"]
 # ==========================================
 # 2. STATISTICAL ENGINE
 # ==========================================
-def calculate_yaw_stats(target_df, expected_val):
-    """Calculates all scientific metrics for Yaw axis"""
+def calculate_pitch_stats(target_df, expected_val):
+    """Calculates all scientific metrics for Pitch axis"""
     if target_df.empty:
         return {"Expected": expected_val, "Mean": "", "MAE": "", "RMSE": "", "Bias": "", "STD": "", "Lower_LOA": "", "Upper_LOA": ""}
     
     # 1. Raw Measured Average
-    measured_mean = np.mean(target_df['yaw'])
+    measured_mean = np.mean(target_df['pitch'])
     
     # 2. Error Calculations
-    raw_err = target_df['yaw'] - expected_val
+    raw_err = target_df['pitch'] - expected_val
     abs_err = np.abs(raw_err)
     
     mae = np.mean(abs_err)
@@ -84,10 +84,10 @@ def process_batch():
             print(f"   ⚠️ File not found. Creating blank row.")
             empty_row = {'File_Name': fname, 'Sample_Count': 0}
             empty_row.update({
-                'Expected_Yaw': config['expected_yaw'],
-                'Yaw_Mean': "",
-                'Yaw_MAE': "", 'Yaw_RMSE': "", 'Yaw_Bias': "", 
-                'Yaw_STD': "", 'Yaw_Lower_LOA': "", 'Yaw_Upper_LOA': ""
+                'Expected_Pitch': config['expected_pitch'],
+                'Pitch_Mean': "",
+                'Pitch_MAE': "", 'Pitch_RMSE': "", 'Pitch_Bias': "", 
+                'Pitch_STD': "", 'Pitch_Lower_LOA': "", 'Pitch_Upper_LOA': ""
             })
             for key in results.keys():
                 results[key].append(empty_row)
@@ -103,12 +103,12 @@ def process_batch():
         # Find column indices
         col_indices = {header: idx for idx, header in enumerate(headers)}
         
-        if 'yaw' not in col_indices:
-            print(f"   ❌ No 'yaw' column found in {fname}.")
+        if 'pitch' not in col_indices:
+            print(f"   ❌ No 'pitch' column found in {fname}.")
             # Create empty data for missing files
-            empty_df = SimpleDataFrame({'yaw': np.array([])})
+            empty_df = SimpleDataFrame({'pitch': np.array([])})
             for sensor in ORDERED_SENSORS:
-                sensor_df = SimpleDataFrame({'yaw': np.array([])})
+                sensor_df = SimpleDataFrame({'pitch': np.array([])})
                 results[sensor].append(build_row(sensor_df))
             continue
             
@@ -146,19 +146,19 @@ def process_batch():
         def build_row(sensor_data):
             row_data = {'File_Name': fname, 'Sample_Count': len(sensor_data)}
             
-            # Process Yaw only
-            expected = config['expected_yaw']
-            stats = calculate_yaw_stats(sensor_data, expected)
+            # Process Pitch only
+            expected = config['expected_pitch']
+            stats = calculate_pitch_stats(sensor_data, expected)
             
             row_data.update({
-                'Expected_Yaw': stats['Expected'],
-                'Yaw_Mean': stats['Mean'],
-                'Yaw_MAE': stats['MAE'],
-                'Yaw_RMSE': stats['RMSE'],
-                'Yaw_Bias': stats['Bias'],
-                'Yaw_STD': stats['STD'],
-                'Yaw_Lower_LOA': stats['Lower_LOA'],
-                'Yaw_Upper_LOA': stats['Upper_LOA']
+                'Expected_Pitch': stats['Expected'],
+                'Pitch_Mean': stats['Mean'],
+                'Pitch_MAE': stats['MAE'],
+                'Pitch_RMSE': stats['RMSE'],
+                'Pitch_Bias': stats['Bias'],
+                'Pitch_STD': stats['STD'],
+                'Pitch_Lower_LOA': stats['Lower_LOA'],
+                'Pitch_Upper_LOA': stats['Upper_LOA']
             })
             return row_data
         
@@ -173,10 +173,10 @@ def process_batch():
         # --- Process Individual Sensors ---
         for sensor in ORDERED_SENSORS:
             sensor_mask = np.array(paused_df.data['sensor_id']) == int(sensor)
-            sensor_yaw_data = np.array(paused_df.data['yaw'])[sensor_mask]
+            sensor_pitch_data = np.array(paused_df.data['pitch'])[sensor_mask]
             
             # Create sensor-specific DataFrame
-            sensor_df = SimpleDataFrame({'yaw': sensor_yaw_data})
+            sensor_df = SimpleDataFrame({'pitch': sensor_pitch_data})
             results[sensor].append(build_row(sensor_df))
 
     # ==========================================
@@ -229,11 +229,11 @@ def process_batch():
 # 5. PLOT GENERATION
 # ==========================================
 def generate_validation_plot(results):
-    """Generate IMU Yaw Accuracy Validation chart"""
-    print("\n📊 Generating Yaw validation plot...")
+    """Generate IMU Pitch Accuracy Validation chart"""
+    print("\n📊 Generating Pitch validation plot...")
     
-    # Extract yaw angles from file names
-    Yaw_angles = [0, 30, 45, 60, 90, -30, -45, -60, -90]
+    # Extract pitch angles from file names
+    Pitch_angles = [0, 30, 45, 60, 90, -30, -45, -60, -90]
     
     # Prepare data for plotting - only individual sensors
     sensor_labels = ['21', '22', '23']
@@ -241,7 +241,7 @@ def generate_validation_plot(results):
     
     fig, ax = plt.subplots(figsize=(14, 8))
     
-    x = np.arange(len(Yaw_angles))
+    x = np.arange(len(Pitch_angles))
     width = 0.25  # Wider bars since we have fewer sensors
     
     for idx, sensor in enumerate(sensor_labels):
@@ -249,35 +249,35 @@ def generate_validation_plot(results):
         std_values = []
         
         for row_data in results[sensor]:
-            # Extract Yaw_MAE and Yaw_STD from the row
-            mae = row_data.get('Yaw_MAE', 0)
-            std = row_data.get('Yaw_STD', 0)
+            # Extract Pitch_MAE and Pitch_STD from the row
+            mae = row_data.get('Pitch_MAE', 0)
+            std = row_data.get('Pitch_STD', 0)
             mae_values.append(mae if isinstance(mae, (int, float)) and not np.isnan(mae) else 0)
             std_values.append(std if isinstance(std, (int, float)) and not np.isnan(std) else 0)
         
         # Ensure we have the right number of values
-        while len(mae_values) < len(Yaw_angles):
+        while len(mae_values) < len(Pitch_angles):
             mae_values.append(0)
             std_values.append(0)
-        mae_values = mae_values[:len(Yaw_angles)]
-        std_values = std_values[:len(Yaw_angles)]
+        mae_values = mae_values[:len(Pitch_angles)]
+        std_values = std_values[:len(Pitch_angles)]
         
         offset = (idx - 1) * width  # Center the three bars
         ax.bar(x + offset, mae_values, width, label=f'Sensor {sensor}',
                color=sensor_colors[idx], yerr=std_values, capsize=5, alpha=0.8)
     
     # Formatting
-    ax.set_xlabel('Expected Yaw Angle (degrees)', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Expected Pitch Angle (degrees)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Mean Absolute Error (degrees)', fontsize=12, fontweight='bold')
-    ax.set_title('IMU Yaw Angle Accuracy Validation\nError bars show ±1 standard deviation', fontsize=14, fontweight='bold')
+    ax.set_title('IMU Pitch Angle Accuracy Validation\nError bars show ±1 standard deviation', fontsize=14, fontweight='bold')
     ax.set_xticks(x)
-    ax.set_xticklabels([f'{angle}°' for angle in Yaw_angles])
+    ax.set_xticklabels([f'{angle}°' for angle in Pitch_angles])
     ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('Yaw_Validation_Chart.png', dpi=300, bbox_inches='tight')
-    print("✅ Yaw validation chart saved as 'Yaw_Validation_Chart.png'")
+    plt.savefig('Pitch_Validation_Chart.png', dpi=300, bbox_inches='tight')
+    print("✅ Pitch validation chart saved as 'Pitch_Validation_Chart.png'")
 
 if __name__ == "__main__":
     process_batch()
